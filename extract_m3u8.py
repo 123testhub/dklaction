@@ -21,7 +21,7 @@ def get_network_m3u8():
     driver.get(url)
     
     # รอให้สตรีมมิ่งโหลดและสร้าง Token (ปรับเวลาได้ตามความเหมาะสม)
-    time.sleep(30)
+    time.sleep(90)
 
     # ดึง Log ออกมาจากท่อ Network
     logs = driver.get_log('performance')
