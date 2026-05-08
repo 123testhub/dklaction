@@ -1,0 +1,23 @@
+name: Extract M3U8 Link
+
+on:
+  workflow_dispatch: # ปุ่มกดรันเอง
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          pip install selenium webdriver-manager
+
+      - name: Run Script
+        run: python extract_m3u8.py
