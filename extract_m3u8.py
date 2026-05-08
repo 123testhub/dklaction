@@ -5,64 +5,54 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-def capture_axn_expert():
+def capture_tsp3_step_by_step():
     options = Options()
-    options.add_argument("--headless")
+    options.add_argument("--headless") # GitHub ต้องรันแบบไม่มีหน้าจอ
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    
-    # 1. ปิดสัญลักษณ์ที่บ่งบอกว่าเป็น Selenium (สำคัญมากในการหลบหลีก)
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option('useAutomationExtension', False)
-    
-    # 2. ใช้ User-Agent ให้เหมือนกับที่แสดงใน Kiwi ของคุณ
-    options.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36")
-    
+    # ปลอมตัวเป็น Chrome PC เพื่อให้เว็บยอมปล่อย Status 200
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
     options.set_capability('goog:loggingPrefs', {'performance': 'ALL'})
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    
-    # 3. ลบค่า webdriver ใน JavaScript เพื่อไม่ให้เว็บรู้ว่าเป็นบอท
-    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-      "source": """
-        Object.defineProperty(navigator, 'webdriver', {
-          get: () => undefined
-        })
-      """
-    })
 
     try:
-        # ขั้นตอนตามที่คุณแนะนำ: เปิดหน้าหลักก่อน
-        print("Step 1: Visiting main list...")
+        # ขั้นตอนที่ 1: เปิดหน้าหลัก (เหมือนที่คุณกด F12 รอไว้)
+        print("Step 1: Opening main list page...")
         driver.get("https://dookeela4.live/live-tv/")
-        time.sleep(15) 
+        time.sleep(10) # รอให้ Session ทำงาน
 
-        # ขั้นตอนที่ 2: เข้าหน้า AXN
-        print("Step 2: Entering AXN page...")
-        driver.get("https://dookeela4.live/live-tv/axn")
+        # ขั้นตอนที่ 2: เปิดหน้าช่องเป้าหมาย (TSP3)
+        print("Step 2: Navigating to TSP3...")
+        driver.get("https://dookeela4.live/live-tv/tsp3")
         
-        # รอให้ระบบสร้างท่อ Network เหมือนในภาพที่คุณส่งมา
-        print("Step 3: Sniffing network (90s)...")
-        time.sleep(90)
+        # ขั้นตอนที่ 3: ดักฟังท่อ Network (รอให้สตรีมเริ่มโหลด)
+        print("Step 3: Sniffing network for 60 seconds...")
+        time.sleep(60)
 
         logs = driver.get_log('performance')
-        found = False
+        found_any = False
+
         for entry in logs:
             log = json.loads(entry['message'])['message']
+            # เช็คเฉพาะตอนที่ได้รับ Response จากเซิร์ฟเวอร์
             if log['method'] == 'Network.responseReceived':
-                url = log['params']['response']['url']
+                res_url = log['params']['response']['url']
                 status = log['params']['response']['status']
                 
-                # ค้นหา chunks.m3u8 ที่สถานะ 200 ตามรูปยืนยัน
-                if 'chunks.m3u8' in url and status == 200:
-                    print(f"\n[✔️] SUCCESS! FOUND STREAM:\n{url}\n")
-                    found = True
+                # เช็คคำสำคัญตามที่คุณระบุ: chunks หรือ playlist และต้อง Status 200
+                if ('chunks.m3u8' in res_url or 'playlist.m3u8' in res_url) and status == 200:
+                    print("-" * 30)
+                    print(f"[FOUND] Status: {status}")
+                    print(f"URL: {res_url}")
+                    print("-" * 30)
+                    found_any = True
         
-        if not found:
-            print("\n[-] Still not found. The site might have updated its protection.")
+        if not found_any:
+            print("[-] No matching m3u8 found with Status 200.")
 
     finally:
         driver.quit()
 
 if __name__ == "__main__":
-    capture_axn_expert()
+    capture_tsp3_step_by_step()
