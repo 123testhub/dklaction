@@ -1,0 +1,23 @@
+name: Extract M3U8 Link
+
+on:
+  workflow_dispatch:
+    # ปุ่ม Run จะปรากฏเพราะบรรทัดนี้
+
+jobs:
+  extract_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Selenium
+        run: pip install selenium webdriver-manager
+
+      - name: Run Extraction Script
+        run: python extract_m3u8.py
